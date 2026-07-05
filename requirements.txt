@@ -1,9 +1,8 @@
-arelle-release>=2.20.0
 requests>=2.31
 pandas>=2.0
 numpy>=1.24
-sqlalchemy>=2.0
 streamlit>=1.30
 yfinance>=0.2.40
 plotly>=5.20
 python-dateutil>=2.8
+sqlalchemy>=2.0
