@@ -19,17 +19,30 @@ from config.settings import DEFAULT_MARKET_RISK_PREMIUM, DEFAULT_TERMINAL_GROWTH
 st.set_page_config(page_title="IB Valuation Lab", layout="wide", page_icon="💼")
 
 # ── data layer (cached so yfinance isn't re-hit on every widget interaction) ──
-
 @st.cache_data(ttl=3600, show_spinner="Fetching financial data...")
 def load_company(ticker: str) -> dict:
-    t = yf.Ticker(ticker)
-    info = t.info
-    return {
-        "info":          info,
-        "income_stmt":   t.income_stmt,
-        "balance_sheet": t.balance_sheet,
-        "cash_flow":     t.cash_flow,
-    }
+    import time
+    
+    for attempt in range(3):
+        try:
+            t = yf.Ticker(ticker)
+            info = t.info
+            
+            # yfinance returns a minimal dict with no financials when rate-limited
+            if not info.get("regularMarketPrice") and not info.get("currentPrice") and not info.get("marketCap"):
+                raise ValueError("Empty response — likely rate limited")
+            
+            return {
+                "info":          info,
+                "income_stmt":   t.income_stmt,
+                "balance_sheet": t.balance_sheet,
+                "cash_flow":     t.cash_flow,
+            }
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(2 + attempt * 3)  # wait 2s, then 5s
+                continue
+            raise e
 
 def field_from_df(df: pd.DataFrame, candidates: list[str], col_idx: int = 0) -> float | None:
     for name in candidates:
